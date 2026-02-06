@@ -1,6 +1,6 @@
 -- ClickyList by Algar
 -- written in part using Sonnet/Opus 4.5
--- Version 1.0
+-- Version 1.1
 -- A script to display extensive info about your current clicky items
 -- /lua run clickylist
 
@@ -25,11 +25,44 @@ local targetColors = {
 }
 local defaultTargetColor = { 1.0, 1.0, 1.0, 1, }
 
-local function addClickies(item)
+local locationColors = {
+    bag = ImVec4(0.7, 0.8, 1.0, 1),
+    inv = ImVec4(1.0, 0.9, 0.6, 1),
+    equipment = ImVec4(0.7, 1.0, 0.8, 1),
+}
+
+local equipSlotNames = {
+    [0] = "Charm",
+    [1] = "Left Ear",
+    [2] = "Head",
+    [3] = "Face",
+    [4] = "Right Ear",
+    [5] = "Neck",
+    [6] = "Shoulders",
+    [7] = "Arms",
+    [8] = "Back",
+    [9] = "Left Wrist",
+    [10] = "Right Wrist",
+    [11] = "Range",
+    [12] = "Hands",
+    [13] = "Primary",
+    [14] = "Secondary",
+    [15] = "Left Finger",
+    [16] = "Right Finger",
+    [17] = "Chest",
+    [18] = "Legs",
+    [19] = "Feet",
+    [20] = "Waist",
+    [21] = "Power Source",
+    [22] = "Ammo",
+}
+
+local function addClickies(item, location)
     if item() and item.Clicky() and (showConsumables or (item.Clicky.MaxCharges() or 0) < 0) and (item.Clicky.RecastType() or 0) >= 0 then
         table.insert(clickyItems, {
             name = item.Name(),
             item = item,
+            location = location,
             spell = item.Clicky.Spell,
             spellName = (item.Clicky.Spell() and item.Clicky.Spell.Name()) or "Unknown",
             castTime = item.Clicky.CastTime() or 0,
@@ -41,6 +74,34 @@ local function addClickies(item)
             iconId = (item.Icon() or 500) - 500,
         })
     end
+end
+
+local function addAugClickies(item, location)
+    if not item() then return end
+    local augLocation = location .. " (Aug)"
+    for i = 1, 6 do
+        local aug = item.AugSlot(i).Item
+        if aug() then
+            addClickies(aug, augLocation)
+        end
+    end
+end
+
+local function getLocationSortValue(location)
+    local isAug = location:find(" %(Aug%)") and 0.5 or 0
+    local base = location:gsub(" %(Aug%)", "")
+
+    for slot, name in pairs(equipSlotNames) do
+        if base == name then return slot + isAug end
+    end
+
+    local invNum = base:match("^Inv (%d+)$")
+    if invNum then return 100 + tonumber(invNum) + isAug end
+
+    local bagNum, slotNum = base:match("^Bag (%d+), Slot (%d+)$")
+    if bagNum then return 200 + (tonumber(bagNum) * 100) + tonumber(slotNum) + isAug end
+
+    return 9999
 end
 
 local function applySorting()
@@ -62,6 +123,8 @@ local function applySorting()
             va, vb = a.recastType, b.recastType
         elseif sortColumn == 6 then
             va, vb = a.requiredLevel, b.requiredLevel
+        elseif sortColumn == 7 then
+            va, vb = getLocationSortValue(a.location), getLocationSortValue(b.location)
         else
             return false
         end
@@ -80,16 +143,23 @@ local function scanClickyItems()
     clickyItems = {}
 
     for slot = 0, 22 do
-        addClickies(mq.TLO.InvSlot(slot).Item)
+        local item = mq.TLO.InvSlot(slot).Item
+        local location = equipSlotNames[slot]
+        addClickies(item, location)
+        addAugClickies(item, location)
     end
 
     for bag = 23, 32 do
         local bagItem = mq.TLO.InvSlot(bag).Item
         if bagItem() then
-            addClickies(bagItem)
-            local bagSlots = bagItem.Container() or 0
-            for slot = 1, bagSlots do
-                addClickies(bagItem.Item(slot))
+            local bagLocation = string.format("Inv %d", bag - 22)
+            addClickies(bagItem, bagLocation)
+            addAugClickies(bagItem, bagLocation)
+            for slot = 1, bagItem.Container() or 0 do
+                local item = bagItem.Item(slot)
+                local itemLocation = string.format("Bag %d, Slot %d", bag - 22, slot)
+                addClickies(item, itemLocation)
+                addAugClickies(item, itemLocation)
             end
         end
     end
@@ -100,7 +170,7 @@ end
 local function renderGUI()
     if mq.TLO.MacroQuest.GameState() ~= "INGAME" then return end
 
-    ImGui.SetNextWindowSize(ImVec2(950, 500), ImGuiCond.FirstUseEver)
+    ImGui.SetNextWindowSize(ImVec2(1090, 500), ImGuiCond.FirstUseEver)
     ImGui.SetNextWindowSizeConstraints(ImVec2(390, 200), ImVec2(2000, 2000))
     local shouldDraw
     openGUI, shouldDraw = ImGui.Begin('Clicky List###clickylist', openGUI)
@@ -122,7 +192,7 @@ local function renderGUI()
 
         local tableFlags = bit32.bor(ImGuiTableFlags.Resizable, ImGuiTableFlags.Borders, ImGuiTableFlags.RowBg, ImGuiTableFlags.ScrollY, ImGuiTableFlags.Sortable,
             ImGuiTableFlags.Hideable, ImGuiTableFlags.Reorderable)
-        if ImGui.BeginTable("ClickyTable", 7, tableFlags) then
+        if ImGui.BeginTable("ClickyTable", 8, tableFlags) then
             ImGui.TableSetupColumn('Item', bit32.bor(ImGuiTableColumnFlags.WidthStretch, ImGuiTableColumnFlags.DefaultSort), 300.0)
             ImGui.TableSetupColumn('Spell', ImGuiTableColumnFlags.WidthStretch, 225.0)
             ImGui.TableSetupColumn('Target', ImGuiTableColumnFlags.WidthFixed, 115.0)
@@ -130,6 +200,7 @@ local function renderGUI()
             ImGui.TableSetupColumn('Recast', ImGuiTableColumnFlags.WidthFixed, 75.0)
             ImGui.TableSetupColumn('Timer', ImGuiTableColumnFlags.WidthFixed, 45.0)
             ImGui.TableSetupColumn('Min Lvl', ImGuiTableColumnFlags.WidthFixed, 60.0)
+            ImGui.TableSetupColumn('Location', ImGuiTableColumnFlags.WidthFixed, 130.0)
             ImGui.TableSetupScrollFreeze(0, 1)
             ImGui.TableHeadersRow()
 
@@ -291,6 +362,12 @@ local function renderGUI()
                     ImGui.Text(tostring(clicky.requiredLevel))
                 end
                 ImGui.PopStyleColor()
+
+                ImGui.TableNextColumn()
+                local locColor = clicky.location:find("^Bag") and locationColors.bag
+                    or clicky.location:find("^Inv") and locationColors.inv
+                    or locationColors.equipment
+                ImGui.TextColored(locColor, clicky.location)
             end
 
             ImGui.EndTable()
