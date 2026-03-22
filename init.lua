@@ -180,7 +180,7 @@ local function renderGUI()
             scanClickyItems()
         end
         ImGui.SameLine()
-        ImGui.Text(string.format("Found %d clicky items", #clickyItems))
+        ImGui.Text("Found %d clicky items", #clickyItems)
         ImGui.SameLine(ImGui.GetWindowWidth() - 160)
         local newShowConsumables = ImGui.Checkbox("Show Consumables", showConsumables)
         if newShowConsumables ~= showConsumables then
@@ -235,7 +235,7 @@ local function renderGUI()
                 ImGui.PopStyleColor(2)
                 if ImGui.IsItemHovered() then
                     ImGui.BeginTooltip()
-                    ImGui.Text(string.format("Item ID: %s (click to inspect)", clicky.item.ID()))
+                    ImGui.Text("Item ID: %s (click to inspect)", clicky.item.ID())
                     ImGui.EndTooltip()
                 end
                 if itemClicked and clicky.item then
@@ -252,7 +252,7 @@ local function renderGUI()
                     ImGui.PopStyleColor(2)
                     if ImGui.IsItemHovered() then
                         ImGui.BeginTooltip()
-                        ImGui.Text(string.format("Spell ID: %s (click to inspect)", clicky.spell.ID()))
+                        ImGui.Text("Spell ID: %s (click to inspect)", clicky.spell.ID())
                         ImGui.EndTooltip()
                     end
                     if clicked then
@@ -296,21 +296,13 @@ local function renderGUI()
                     if seconds >= 60 then
                         local mins = math.floor(seconds / 60)
                         local secs = math.floor(seconds) % 60
-                        ImGui.Text(tostring(mins))
-                        ImGui.SameLine(0, 0)
                         if secs == 0 then
-                            ImGui.Text("m")
+                            ImGui.Text("%dm", mins)
                         else
-                            ImGui.Text("m ")
-                            ImGui.SameLine(0, 0)
-                            ImGui.Text(tostring(secs))
-                            ImGui.SameLine(0, 0)
-                            ImGui.Text("s")
+                            ImGui.Text("%dm %ds", mins, secs)
                         end
                     else
-                        ImGui.Text(string.format("%.1f", seconds))
-                        ImGui.SameLine(0, 0)
-                        ImGui.Text("s")
+                        ImGui.Text("%.1fs", seconds)
                     end
                     ImGui.PopStyleColor()
                 end
@@ -326,28 +318,20 @@ local function renderGUI()
                     if seconds >= 60 then
                         local mins = math.floor(seconds / 60)
                         local secs = math.floor(seconds) % 60
-                        ImGui.Text(tostring(mins))
-                        ImGui.SameLine(0, 0)
                         if secs == 0 then
-                            ImGui.Text("m")
+                            ImGui.Text("%dm", mins)
                         else
-                            ImGui.Text("m ")
-                            ImGui.SameLine(0, 0)
-                            ImGui.Text(tostring(secs))
-                            ImGui.SameLine(0, 0)
-                            ImGui.Text("s")
+                            ImGui.Text("%dm %ds", mins, secs)
                         end
                     else
-                        ImGui.Text(tostring(seconds))
-                        ImGui.SameLine(0, 0)
-                        ImGui.Text("s")
+                        ImGui.Text("%ds", seconds)
                     end
                     ImGui.PopStyleColor()
                 end
 
                 ImGui.TableNextColumn()
                 ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(0.7, 1.0, 0.8, 1))
-                ImGui.Text(tostring(clicky.recastType))
+                ImGui.Text("%d", clicky.recastType)
                 ImGui.PopStyleColor()
 
                 ImGui.TableNextColumn()
@@ -356,10 +340,10 @@ local function renderGUI()
                     ImGui.Text("-")
                 elseif mq.TLO.Me.Level() >= clicky.requiredLevel then
                     ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(0.4, 1.0, 0.4, 1))
-                    ImGui.Text(tostring(clicky.requiredLevel))
+                    ImGui.Text("%d", clicky.requiredLevel)
                 else
                     ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(1.0, 0.4, 0.4, 1))
-                    ImGui.Text(tostring(clicky.requiredLevel))
+                    ImGui.Text("%d", clicky.requiredLevel)
                 end
                 ImGui.PopStyleColor()
 
