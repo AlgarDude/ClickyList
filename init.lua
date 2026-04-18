@@ -1,12 +1,12 @@
 -- ClickyList by Algar
 -- written in part using Sonnet/Opus 4.5
--- Version 1.1
 -- A script to display extensive info about your current clicky items
 -- /lua run clickylist
 
 local mq = require('mq')
 local ImGui = require('ImGui')
 
+local version = "1.1"
 local openGUI = true
 local showConsumables = false
 local clickyItems = {}
@@ -173,7 +173,7 @@ local function renderGUI()
     ImGui.SetNextWindowSize(ImVec2(1090, 500), ImGuiCond.FirstUseEver)
     ImGui.SetNextWindowSizeConstraints(ImVec2(390, 200), ImVec2(2000, 2000))
     local shouldDraw
-    openGUI, shouldDraw = ImGui.Begin('Clicky List###clickylist', openGUI)
+    openGUI, shouldDraw = ImGui.Begin(string.format('Clicky List v%s###clickylist', version), openGUI)
 
     if shouldDraw then
         if ImGui.Button("Rescan") then
